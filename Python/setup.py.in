@@ -70,6 +70,7 @@ for l in libs:
         extra_link_args.append(fn.split('.')[0])
     else:
         libnames.append(fn)
+full_libs = libs
 libs = libnames
 
 #Parse definitions
@@ -91,14 +92,36 @@ for d in defs:
 
 includeDirs.append(numpy.get_include())
 
+#remove /usr/include and /usr/local/include on Mac build
+import platform
+if platform.system()=='Darwin':
+    print("Removing /usr/local/include from include paths")
+    extra_compile_args.append('-H') #show include files
+    #TODO convert Path/To/X.framework -> -framework X for linker
+    new_include_dirs = []
+    for v in includeDirs:
+        if v.endswith('/usr/include') or v.endswith('/usr/local/include'):
+            continue
+        else:
+            new_include_dirs.append(v)
+    includeDirs = new_include_dirs
+    
 commonfiles = ['pyerr.cpp']
 rssourcefiles = commonfiles + ['robotsim.cpp','robotik.cpp','robotsim_wrap.cxx']
 mpsourcefiles = commonfiles + ['motionplanning.cpp','motionplanning_wrap.cxx']
 rfsourcefiles = commonfiles + ['rootfind.cpp','pyvectorfield.cpp','rootfind_wrap.cxx']
 
+#get oldest numpy version compatible with build
+if sys.version_info[0]==3 and sys.version_info[1]==5:
+    numpy_oldest_acceptable_version = '1.18.5'
+elif sys.version_info[0]==3 and sys.version_info[1]==6:
+    numpy_oldest_acceptable_version = '1.19.5'
+else:
+    numpy_oldest_acceptable_version = '1.20.0'
+
 
 setup(name='Klampt',
-      version='@KLAMPT_VERSION@',
+      version='@KLAMPT_VERSION@.post2',
       description="Python API to Klamp't, a package for robot modeling, simulating, planning, optimization, and visualization",
       author='Kris Hauser',
       author_email='hauser.kris@gmail.com',
@@ -157,7 +180,7 @@ setup(name='Klampt',
       ],
       install_requires=[
         'PyOpenGL',
-        'numpy',
+        'numpy>='+numpy_oldest_acceptable_version
       ],
      )
 
